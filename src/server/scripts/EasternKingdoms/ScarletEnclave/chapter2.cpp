@@ -236,7 +236,7 @@ public:
     {
         npc_koltira_deathweaverAI(Creature* creature) : npc_escortAI(creature), summons(me)
         {
-            me->SetReactState(REACT_DEFENSIVE);
+            me->SetReactState(REACT_PASSIVE);
         }
 
         uint32 m_uiWave;
@@ -246,44 +246,13 @@ public:
 
         void Reset() override
         {
-            if (!HasEscortState(STATE_ESCORT_ESCORTING))
-            {
-                m_uiWave = 0;
-                m_uiWave_Timer = 3000;
-                m_uiValrothGUID.Clear();
-                me->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
-                me->LoadEquipment(0, true);
-                me->RemoveAllAuras();
-                summons.DespawnAll();
-            }
-        }
-
-        void EnterEvadeMode(EvadeReason /*why*/) override
-        {
-            me->GetThreatMgr().ClearAllThreat();
-            me->CombatStop(false);
-            me->SetLootRecipient(nullptr);
-
-            if (HasEscortState(STATE_ESCORT_ESCORTING))
-            {
-                AddEscortState(STATE_ESCORT_RETURNING);
-                ReturnToLastPoint();
-                LOG_DEBUG("scripts.ai", "EscortAI has left combat and is now returning to last point");
-            }
-            else
-            {
-                me->GetMotionMaster()->MoveTargetedHome();
-                me->SetImmuneToNPC(true);
-                Reset();
-            }
-        }
-
-        void AttackStart(Unit* who) override
-        {
-            if (HasEscortState(STATE_ESCORT_PAUSED))
-                return;
-
-            npc_escortAI::AttackStart(who);
+            m_uiWave = 0;
+            m_uiWave_Timer = 3000;
+            m_uiValrothGUID.Clear();
+            me->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
+            me->LoadEquipment(0, true);
+            me->RemoveAllAuras();
+            summons.DespawnAll();
         }
 
         void WaypointReached(uint32 waypointId) override
@@ -292,7 +261,6 @@ public:
             {
                 case 0:
                     Talk(SAY_BREAKOUT1);
-                    me->RemoveUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
                     break;
                 case 1:
                     me->SetStandState(UNIT_STAND_STATE_KNEEL);
@@ -324,21 +292,10 @@ public:
 
         void JustSummoned(Creature* summoned) override
         {
-            if (Player* player = GetPlayerForEscort())
-                summoned->AI()->AttackStart(player);
-
             if (summoned->GetEntry() == NPC_HIGH_INQUISITOR_VALROTH)
                 m_uiValrothGUID = summoned->GetGUID();
 
-            summoned->AddThreat(me, 0.0f);
-            summoned->SetImmuneToPC(false);
             summons.Summon(summoned);
-        }
-
-        void SummonAcolyte(uint32 uiAmount)
-        {
-            for (uint32 i = 0; i < uiAmount; ++i)
-                me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1642.329f, -6045.818f, 127.583f, 0.0f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
         }
 
         void UpdateAI(uint32 uiDiff) override
@@ -353,22 +310,49 @@ public:
                     {
                         case 0:
                             Talk(SAY_BREAKOUT3);
-                            SummonAcolyte(3);
+
                             m_uiWave_Timer = 20000;
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1640.6724f, -6032.0527f, 134.82213f, 4.654973506927490234f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath(acolyte->GetEntry() * 10, false);
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1641.0055f, -6031.893f, 134.82211f, 0.401425719261169433f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 1) * 10, false);
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1639.7053f, -6031.7373f, 134.82213f, 2.443460941314697265f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 2) * 10, false);
                             break;
                         case 1:
                             Talk(SAY_BREAKOUT4);
-                            SummonAcolyte(3);
                             m_uiWave_Timer = 20000;
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1640.7958f, -6030.307f, 134.82211f, 4.65355682373046875f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 3) * 10, false);
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1641.7305f, -6030.751f, 134.82211f, 6.143558979034423828f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 4) * 10, false);
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1639.4657f, -6030.404f, 134.82211f, 4.502949237823486328f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 5) * 10, false);
                             break;
                         case 2:
                             Talk(SAY_BREAKOUT5);
-                            SummonAcolyte(4);
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1641.3405f, -6031.436f, 134.82211f, 4.612849712371826171f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 6) * 10, false);
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1642.0404f, -6030.3843f, 134.82211f, 1.378810048103332519f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 7) * 10, false);
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1640.1162f, -6029.7817f, 134.82211f, 5.707226753234863281f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 8) * 10, false);
+
+                            if (Creature* acolyte = me->SummonCreature(NPC_CRIMSON_ACOLYTE, 1640.9948f, -6029.8027f, 134.82211f, 1.605702877044677734f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                acolyte->GetMotionMaster()->MovePath((acolyte->GetEntry() + 9) * 10, false);
                             m_uiWave_Timer = 20000;
                             break;
                         case 3:
                             Talk(SAY_BREAKOUT6);
-                            me->SummonCreature(NPC_HIGH_INQUISITOR_VALROTH, 1642.329f, -6045.818f, 127.583f, 0.0f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 1000);
+                            if (Creature* valroth = me->SummonCreature(NPC_HIGH_INQUISITOR_VALROTH, 1640.8596f, -6030.834f, 134.82211f, 4.606426715850830078f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+                                valroth->GetMotionMaster()->MovePath(valroth->GetEntry() * 10, false);
                             m_uiWave_Timer = 1000;
                             break;
                         case 4:
@@ -382,14 +366,6 @@ public:
                                 }
                                 else
                                 {
-                                    // xinef: despawn check
-                                    Player* player = GetPlayerForEscort();
-                                    if (!player || me->GetDistance(player) > 60.0f)
-                                    {
-                                        me->DespawnOrUnsummon();
-                                        return;
-                                    }
-
                                     m_uiWave_Timer = 2500;
                                     return;                         //return, we don't want m_uiWave to increment now
                                 }
